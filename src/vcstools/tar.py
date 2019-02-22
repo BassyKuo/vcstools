@@ -117,14 +117,22 @@ class TarClient(VcsClientBase):
                 # relative path
                 subdirs = []
                 members = []
+                version_rename = version
                 for m in temp_tarfile.getmembers():
-                    if m.name.startswith(version + '/'):
+                    if m.name.startswith(version_rename + '/'):
+                        members.append(m)
+                    elif m.name.startswith('-'.join(version.split('-')[:-2]) + '/'):
+                        """FOR CASE:
+                        m = 'class_loader-release-release-kinetic-class_loader/CMakeLists.txt'
+                        but version = 'class_loader-release-release-kinetic-class_loader-0.3.9-0'
+                        """
+                        version_rename = '-'.join(version.split('-')[:-2])
                         members.append(m)
                     if m.name.split('/')[0] not in subdirs:
                         subdirs.append(m.name.split('/')[0])
                 if not members:
                     raise VcsError("%s is not a subdirectory with contents in members %s" % (version, subdirs))
-                subdir = os.path.join(tempdir, version)
+                subdir = os.path.join(tempdir, version_rename)
             temp_tarfile.extractall(path=tempdir, members=members)
 
             if not os.path.isdir(subdir):
